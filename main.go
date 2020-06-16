@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/google/uuid"
 
@@ -23,26 +23,22 @@ var (
 const ProgramVersion string = "0.1.0"
 
 func main() {
-	flag.Parse()
 	data = make(map[string]datatypes.Route)
 
-	r := httprouter.New()
-	r.GET("/route/:key", getRoute)
-	r.POST("/route", postRoute)
-	r.GET("/statusReport", getStatusReport)
-
-	port := os.Getenv("GPSTIMING_BACKEND_PORT")
-	if len(port) == 0 {
-		fmt.Println(os.Getenv("GPSTIMING_BACKEND_PORT"))
-		port = "8080"
+	port, err := parseSettingsFromEnvironment()
+	if err != nil {
+		log.Fatal("Failed to parse port number, it should be an integer")
+		os.Exit(1)
 	}
+
+	r := routerFactory()
 
 	fmt.Println("gpsTiming-backend")
 	fmt.Println("version " + ProgramVersion + " 2020")
-	fmt.Println("system online on port " + port)
+	fmt.Println("system online on port " + strconv.Itoa(port))
 
-	addr := flag.String("addr", ":"+port, "http service address")
-	err := http.ListenAndServe(*addr, r)
+	addr := ":" + strconv.Itoa(port)
+	err = http.ListenAndServe(addr, r)
 	if err != nil {
 		log.Fatal("ListenAndServe", err)
 	}
